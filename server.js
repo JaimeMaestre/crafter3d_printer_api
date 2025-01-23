@@ -10,7 +10,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Route to execute shell commands
-app.post('/shell-command', (req, res) => {
+app.post('/execute-command', (req, res) => {
   const { command } = req.body; // Get command from the request body
 
   if (!command) {
@@ -32,6 +32,7 @@ app.post('/shell-command', (req, res) => {
 });
 
 // Start the server
+const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:3000`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
