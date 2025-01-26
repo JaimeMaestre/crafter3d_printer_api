@@ -113,22 +113,22 @@ app.post('/wifi/forget-connection', (req, res) => {
 });
 
 // API endpoint to fetch the currently active connection
-// app.get('/active-connection', (req, res) => {
-//   exec('nmcli -t -f NAME connection show --active', (error, stdout, stderr) => {
-//     if (error) {
-//       console.error(`Error: ${stderr || error.message}`);
-//       return res.status(500).json({ error: stderr || error.message });
-//     }
+app.get('/wifi/active-connection', (req, res) => {
+  exec('nmcli -t -f NAME connection show --active', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error: ${stderr || error.message}`);
+      return res.status(500).json({ error: stderr || error.message });
+    }
 
-//     const unwantedWords = ['Crafter3D', 'Wired connection 1', 'lo'];
-//     let activeConnection = stdout.trim();
-//     unwantedWords.forEach((word) => {
-//       activeConnection = activeConnection.replace(word, '').trim();
-//     });
+    const unwantedWords = ['Crafter3D', 'Wired connection 1', 'lo'];
+    let activeConnection = stdout.trim();
+    unwantedWords.forEach((word) => {
+      activeConnection = activeConnection.replace(word, '').trim();
+    });
 
-//     res.status(200).json({ activeConnection });
-//   });
-// });
+    res.status(200).json({ activeConnection });
+  });
+});
 
 // Start the server
 app.listen(PORT, () => {
