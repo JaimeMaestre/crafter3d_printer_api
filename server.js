@@ -46,16 +46,21 @@ app.post('/wifi/new-connection', (req, res) => {
     ? `sudo nmcli device wifi connect "${ssid}" password "${password}" 2>&1`
     : `sudo nmcli device wifi connect "${ssid}" 2>&1`;
 
-  exec(connectCommand, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error: ${stderr || error.message}`);
-      return res.status(500).json({ error: stderr || error.message });
+  exec(connectCommand, (connectError, connectStdout, connectStderr) => {
+    if (connectError) {
+      console.error(`Error connecting to network: ${connectStderr || connectError.message}`);
+      if (connectStderr.includes('invalid password')) {
+        return res.status(401).json({ error: 'Invalid password provided' });
+      }
+      return res.status(500).json({ error: connectStderr || connectError.message });
     }
 
-    if (stdout.includes('successfully activated')) {
+    // Check if the connection was successfully activated
+    if (connectStdout.includes('successfully activated')) {
       return res.status(200).json({ message: `Successfully connected to ${ssid}` });
     } else {
-      return res.status(400).json({ error: stdout.trim() });
+      console.error(`Unexpected connection error: ${connectStdout}`);
+      return res.status(400).json({ error: connectStdout.trim() });
     }
   });
 });
@@ -141,6 +146,32 @@ app.get('/wifi/active-connection', (req, res) => {
     res.status(200).json({ activeConnection });
   });
 });
+
+// API endpoint to connect to a known SSID
+app.post('/wifi/connect-wifi', (req, res) => {
+  const { ssid } = req.body;
+
+  if (!ssid) {
+    return res.status(400).json({ error: 'SSID is required' });
+  }
+
+  // Command to activate a known SSID
+  const connectCommand = `sudo nmcli connection up id "${ssid}" 2>&1`;
+
+  exec(connectCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error connecting to network: ${stderr || error.message}`);
+      return res.status(500).json({ error: stderr || error.message });
+    }
+
+    if (stdout.includes('Connection successfully activated')) {
+      return res.status(200).json({ message: `Successfully connected to ${ssid}` });
+    } else {
+      return res.status(400).json({ error: stdout.trim() });
+    }
+  });
+});
+
 
 // Start the server
 app.listen(PORT, () => {
