@@ -173,6 +173,19 @@ app.post('/wifi/connect-wifi', (req, res) => {
   });
 });
 
+// Route to list serial devices
+app.get('/serial/devices', (req, res) => {
+  const listCommand = 'ls -l /dev/serial/by-id/';
+  exec(listCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error: ${stderr || error.message}`);
+      return res.status(500).json({ error: stderr || error.message });
+    }
+
+    res.status(200).json({ devices: stdout.trim() });
+  });
+});
+
 
 // Start the server
 app.listen(PORT, () => {
