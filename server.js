@@ -62,7 +62,7 @@ app.post('/wifi/new-connection', (req, res) => {
 
 // API endpoint to fetch available networks
 app.get('/wifi/available-networks', (req, res) => {
-  exec('nmcli -t -f SSID,SIGNAL,SECURITY dev wifi', (error, stdout, stderr) => {
+  exec('sudo nmcli -t -f SSID,SIGNAL,SECURITY dev wifi', (error, stdout, stderr) => {
     if (error) {
       console.error(`Error: ${stderr || error.message}`);
       return res.status(500).json({ error: stderr || error.message });
@@ -83,7 +83,7 @@ app.get('/wifi/available-networks', (req, res) => {
 
 // API endpoint to fetch saved connections
 app.get('/wifi/saved-connections', (req, res) => {
-  exec('nmcli -t -f NAME connection show', (error, stdout, stderr) => {
+  exec('sudo nmcli -t -f NAME connection show', (error, stdout, stderr) => {
     if (error) {
       console.error(`Error: ${stderr || error.message}`);
       return res.status(500).json({ error: stderr || error.message });
