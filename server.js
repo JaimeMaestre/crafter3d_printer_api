@@ -50,6 +50,7 @@ app.post('/wifi/new-connection', (req, res) => {
     if (connectError) {
       console.error(`Error connecting to network: ${connectStderr || connectError.message}`);
       if (connectStderr.includes('invalid password')) {
+        exec(`sudo nmcli connection delete id "${ssid}"`)
         return res.status(401).json({ error: 'Invalid password provided' });
       }
       return res.status(500).json({ error: connectStderr || connectError.message });
