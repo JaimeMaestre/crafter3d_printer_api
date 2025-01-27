@@ -75,11 +75,23 @@ app.get('/wifi/available-networks', (req, res) => {
         const [ssid, signal, security] = line.split(':');
         return { ssid, signal, security };
       })
-      .filter((network) => network.ssid);
+      .filter((network) => network.ssid); // Filter out any empty SSIDs
 
-    res.status(200).json(networks);
+    // Remove duplicates by SSID
+    const uniqueNetworks = [];
+    const seenSSIDs = new Set();
+
+    networks.forEach((network) => {
+      if (!seenSSIDs.has(network.ssid)) {
+        seenSSIDs.add(network.ssid);
+        uniqueNetworks.push(network);
+      }
+    });
+
+    res.status(200).json(uniqueNetworks);
   });
 });
+
 
 // API endpoint to fetch saved connections
 app.get('/wifi/saved-connections', (req, res) => {
