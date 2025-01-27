@@ -114,7 +114,7 @@ app.post('/wifi/forget-connection', (req, res) => {
 
 // API endpoint to fetch the currently active connection
 app.get('/wifi/active-connection', (req, res) => {
-  exec('sudo nmcli -t -f NAME connection show --active', (error, stdout, stderr) => {
+  exec('sudo nmcli -t -f NAME,SIGNAL connection show --active', (error, stdout, stderr) => {
     if (error) {
       console.error(`Error: ${stderr || error.message}`);
       return res.status(500).json({ error: stderr || error.message });
