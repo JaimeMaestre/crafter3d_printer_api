@@ -9,32 +9,44 @@ const PORT = 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+const fs = require('fs');
+const path = require('path');
 
+// post
+app.post('/config-save-file/printer-45', (req, res) => {
+  const { content } = req.body;
+  const filePath = '/home/crafter3d/printer_data/config/printer_45.cfg';
 
-
-// Route to execute shell commands
-app.post('/shell/execute', (req, res) => {
-  const { command } = req.body; // Get command from the request body
-
-  if (!command) {
-    return res.status(400).json({ error: 'Command is required' });
+  if (!content) {
+    return res.status(400).json({ error: 'Content is required.' });
   }
 
-  // Execute the command
-  exec(command, (error, stdout, stderr) => {
+  fs.writeFile(filePath, content, 'utf8', (error) => {
     if (error) {
-      console.error(`Error: ${error.message}`);
-      return res.status(500).json({ error: error.message });
+      console.error(`Error writing file: ${error.message}`);
+      return res.status(500).json({ error: 'Failed to write the configuration file.' });
     }
-    if (stderr) {
-      console.warn(`Stderr: ${stderr}`);
-      return res.status(200).json({ stderr });
-    }
-    return res.status(200).json({ stdout }); // Send back the output
+    res.status(200).json({ message: 'Configuration file updated successfully.' });
   });
 });
 
-// API endpoint to connect to a new network
+app.post('/config-save-file/printer-standard', (req, res) => {
+  const { content } = req.body;
+  const filePath = '/home/crafter3d/printer_data/config/printer_standard.cfg';
+
+  if (!content) {
+    return res.status(400).json({ error: 'Content is required.' });
+  }
+
+  fs.writeFile(filePath, content, 'utf8', (error) => {
+    if (error) {
+      console.error(`Error writing file: ${error.message}`);
+      return res.status(500).json({ error: 'Failed to write the configuration file.' });
+    }
+    res.status(200).json({ message: 'Configuration file updated successfully.' });
+  });
+});
+
 app.post('/wifi/new-connection', (req, res) => {
   const { ssid, password } = req.body;
 
@@ -66,7 +78,72 @@ app.post('/wifi/new-connection', (req, res) => {
   });
 });
 
-// API endpoint to fetch available networks
+app.post('/wifi/delete-connection', (req, res) => {
+  const { ssid } = req.body;
+
+  if (!ssid) {
+    return res.status(400).json({ error: 'SSID is required' });
+  }
+
+  exec(`sudo nmcli connection delete id "${ssid}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error: ${stderr || error.message}`);
+      return res.status(500).json({ error: stderr || error.message });
+    }
+
+    res.status(200).json({ message: `Successfully forgot ${ssid}` });
+  });
+});
+
+app.post('/wifi/connect-wifi', (req, res) => {
+  const { ssid } = req.body;
+
+  if (!ssid) {
+    return res.status(400).json({ error: 'SSID is required' });
+  }
+
+  // Command to activate a known SSID
+  const connectCommand = `sudo nmcli connection up id "${ssid}" 2>&1`;
+
+  exec(connectCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error connecting to network: ${stderr || error.message}`);
+      return res.status(500).json({ error: stderr || error.message });
+    }
+
+    if (stdout.includes('Connection successfully activated')) {
+      return res.status(200).json({ message: `Successfully connected to ${ssid}` });
+    } else {
+      return res.status(400).json({ error: stdout.trim() });
+    }
+  });
+});
+
+// getters
+app.get('/config-get-file/printer-45', (req, res) => {
+  const filePath = '/home/crafter3d/printer_data/config/printer_45.cfg';
+
+  fs.readFile(filePath, 'utf8', (error, data) => {
+    if (error) {
+      console.error(`Error reading file: ${error.message}`);
+      return res.status(500).json({ error: 'Failed to read the configuration file.' });
+    }
+    res.status(200).json({ content: data });
+  });
+});
+
+app.get('/config-get-file/printer-standard', (req, res) => {
+  const filePath = '/home/crafter3d/printer_data/config/printer_standard.cfg';
+
+  fs.readFile(filePath, 'utf8', (error, data) => {
+    if (error) {
+      console.error(`Error reading file: ${error.message}`);
+      return res.status(500).json({ error: 'Failed to read the configuration file.' });
+    }
+    res.status(200).json({ content: data });
+  });
+});
+
 app.get('/wifi/available-networks', (req, res) => {
   exec('sudo nmcli -t -f SSID,SIGNAL,SECURITY dev wifi', (error, stdout, stderr) => {
     if (error) {
@@ -98,8 +175,6 @@ app.get('/wifi/available-networks', (req, res) => {
   });
 });
 
-
-// API endpoint to fetch saved connections
 app.get('/wifi/saved-connections', (req, res) => {
   exec('sudo nmcli -t -f NAME connection show', (error, stdout, stderr) => {
     if (error) {
@@ -112,25 +187,6 @@ app.get('/wifi/saved-connections', (req, res) => {
   });
 });
 
-// API endpoint to forget a saved connection
-app.post('/wifi/forget-connection', (req, res) => {
-  const { ssid } = req.body;
-
-  if (!ssid) {
-    return res.status(400).json({ error: 'SSID is required' });
-  }
-
-  exec(`sudo nmcli connection delete id "${ssid}"`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error: ${stderr || error.message}`);
-      return res.status(500).json({ error: stderr || error.message });
-    }
-
-    res.status(200).json({ message: `Successfully forgot ${ssid}` });
-  });
-});
-
-// API endpoint to fetch the currently active connection
 app.get('/wifi/active-connection', (req, res) => {
   exec('sudo nmcli -t -f NAME connection show --active', (error, stdout, stderr) => {
     if (error) {
@@ -148,32 +204,6 @@ app.get('/wifi/active-connection', (req, res) => {
   });
 });
 
-// API endpoint to connect to a known SSID
-app.post('/wifi/connect-wifi', (req, res) => {
-  const { ssid } = req.body;
-
-  if (!ssid) {
-    return res.status(400).json({ error: 'SSID is required' });
-  }
-
-  // Command to activate a known SSID
-  const connectCommand = `sudo nmcli connection up id "${ssid}" 2>&1`;
-
-  exec(connectCommand, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error connecting to network: ${stderr || error.message}`);
-      return res.status(500).json({ error: stderr || error.message });
-    }
-
-    if (stdout.includes('Connection successfully activated')) {
-      return res.status(200).json({ message: `Successfully connected to ${ssid}` });
-    } else {
-      return res.status(400).json({ error: stdout.trim() });
-    }
-  });
-});
-
-// Route to list serial devices
 app.get('/serial/devices', (req, res) => {
   const listCommand = 'ls -l /dev/serial/by-id/';
   exec(listCommand, (error, stdout, stderr) => {
