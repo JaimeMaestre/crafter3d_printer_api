@@ -205,14 +205,25 @@ app.get('/wifi/active-connection', (req, res) => {
 });
 
 app.get('/serial/devices', (req, res) => {
-  const listCommand = 'ls -l /dev/serial/by-id/';
+  const listCommand = 'ls -l /dev/serial/by-id/*';
   exec(listCommand, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error: ${stderr || error.message}`);
       return res.status(500).json({ error: stderr || error.message });
     }
 
-    res.status(200).json({ devices: stdout.trim() });
+    // Process the output to extract meaningful information
+    const devices = stdout
+      .trim()
+      .split('\n') // Split into lines
+      .filter(line => line.includes('/dev/serial/by-id/')) // Keep only relevant lines
+      .map(line => {
+        const [permissions, links, owner, group, size, month, day, time, ...rest] = line.split(/\s+/);
+        const link = rest.join(' ');
+        return { device: link.split(' -> ')[0], path: link.split(' -> ')[1] };
+      });
+
+    res.status(200).json({ devices });
   });
 });
 
