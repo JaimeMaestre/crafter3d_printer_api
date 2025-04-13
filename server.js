@@ -233,7 +233,7 @@ app.get('/config-get-file/standard', (req, res) => {
   });
 });
 
-app.get('/config-get-file/infinite-z>', (req, res) => {
+app.get('/config-get-file/infinite-z', (req, res) => {
   const filePath = '/home/crafter3d/printer_data/config/infinite-z.cfg';
 
   fs.readFile(filePath, 'utf8', (error, data) => {
