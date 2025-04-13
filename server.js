@@ -13,9 +13,9 @@ const fs = require('fs');
 const path = require('path');
 
 // post
-app.post('/config-save-file/printer-45', (req, res) => {
+app.post('/config-save-file/printer', (req, res) => {
   const { content } = req.body;
-  const filePath = '/home/crafter3d/printer_data/config/printer_45.cfg';
+  const filePath = '/home/crafter3d/printer_data/config/printer.cfg';
 
   if (!content) {
     return res.status(400).json({ error: 'Content is required.' });
@@ -30,9 +30,9 @@ app.post('/config-save-file/printer-45', (req, res) => {
   });
 });
 
-app.post('/config-save-file/printer-standard', (req, res) => {
+app.post('/config-save-file/standard', (req, res) => {
   const { content } = req.body;
-  const filePath = '/home/crafter3d/printer_data/config/printer_standard.cfg';
+  const filePath = '/home/crafter3d/printer_data/config/standard.cfg';
 
   if (!content) {
     return res.status(400).json({ error: 'Content is required.' });
@@ -44,6 +44,95 @@ app.post('/config-save-file/printer-standard', (req, res) => {
       return res.status(500).json({ error: 'Failed to write the configuration file.' });
     }
     res.status(200).json({ message: 'Configuration file updated successfully.' });
+  });
+});
+
+app.post('/config-save-file/infinite-z', (req, res) => {
+  const { content } = req.body;
+  const filePath = '/home/crafter3d/printer_data/config/infinite-z.cfg';
+
+  if (!content) {
+    return res.status(400).json({ error: 'Content is required.' });
+  }
+
+  fs.writeFile(filePath, content, 'utf8', (error) => {
+    if (error) {
+      console.error(`Error writing file: ${error.message}`);
+      return res.status(500).json({ error: 'Failed to write the configuration file.' });
+    }
+    res.status(200).json({ message: 'Configuration file updated successfully.' });
+  });
+});
+
+app.post('/config-file/toggle-standard', (req, res) => {
+  const printerCfgPath = '/home/crafter3d/printer_data/config/printer.cfg';
+
+  fs.readFile(printerCfgPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading printer.cfg:', err);
+      return res.status(500).json({ error: 'Failed to read printer.cfg' });
+    }
+
+    const lines = data.split('\n');
+    const newInclude = 'include standard.cfg';
+    const targetLine = 'include infinite-z.cfg';
+
+    let updatedContent;
+
+    if (data.includes(targetLine)) {
+      updatedContent = data.replace(targetLine, newInclude);
+    } else if (!data.includes(newInclude)) {
+      // Insert standard include at line 2
+      lines.splice(1, 0, newInclude);
+      updatedContent = lines.join('\n');
+    } else {
+      return res.status(400).json({ error: 'No valid mode to switch from' });
+    }
+
+    fs.writeFile(printerCfgPath, updatedContent, 'utf8', (writeErr) => {
+      if (writeErr) {
+        console.error('Error writing printer.cfg:', writeErr);
+        return res.status(500).json({ error: 'Failed to write printer.cfg' });
+      }
+
+      res.status(200).json({ message: 'Switched to standard mode' });
+    });
+  });
+});
+
+app.post('/config-file/toggle-infinite-z', (req, res) => {
+  const printerCfgPath = '/home/crafter3d/printer_data/config/printer.cfg';
+
+  fs.readFile(printerCfgPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading printer.cfg:', err);
+      return res.status(500).json({ error: 'Failed to read printer.cfg' });
+    }
+
+    const lines = data.split('\n');
+    const newInclude = 'include infinite-z.cfg';
+    const targetLine = 'include standard.cfg';
+
+    let updatedContent;
+
+    if (data.includes(targetLine)) {
+      updatedContent = data.replace(targetLine, newInclude);
+    } else if (!data.includes(newInclude)) {
+      // Insert infinite-z include at line 2
+      lines.splice(1, 0, newInclude);
+      updatedContent = lines.join('\n');
+    } else {
+      return res.status(400).json({ error: 'No valid mode to switch from' });
+    }
+
+    fs.writeFile(printerCfgPath, updatedContent, 'utf8', (writeErr) => {
+      if (writeErr) {
+        console.error('Error writing printer.cfg:', writeErr);
+        return res.status(500).json({ error: 'Failed to write printer.cfg' });
+      }
+
+      res.status(200).json({ message: 'Switched to infinite-z mode' });
+    });
   });
 });
 
@@ -120,8 +209,8 @@ app.post('/wifi/connect-wifi', (req, res) => {
 });
 
 // getters
-app.get('/config-get-file/printer-45', (req, res) => {
-  const filePath = '/home/crafter3d/printer_data/config/printer_45.cfg';
+app.get('/config-get-file/printer', (req, res) => {
+  const filePath = '/home/crafter3d/printer_data/config/printer.cfg';
 
   fs.readFile(filePath, 'utf8', (error, data) => {
     if (error) {
@@ -132,8 +221,20 @@ app.get('/config-get-file/printer-45', (req, res) => {
   });
 });
 
-app.get('/config-get-file/printer-standard', (req, res) => {
-  const filePath = '/home/crafter3d/printer_data/config/printer_standard.cfg';
+app.get('/config-get-file/standard', (req, res) => {
+  const filePath = '/home/crafter3d/printer_data/config/standard.cfg';
+
+  fs.readFile(filePath, 'utf8', (error, data) => {
+    if (error) {
+      console.error(`Error reading file: ${error.message}`);
+      return res.status(500).json({ error: 'Failed to read the configuration file.' });
+    }
+    res.status(200).json({ content: data });
+  });
+});
+
+app.get('/config-get-file/infinite-z>', (req, res) => {
+  const filePath = '/home/crafter3d/printer_data/config/infinite-z.cfg';
 
   fs.readFile(filePath, 'utf8', (error, data) => {
     if (error) {
